@@ -1082,21 +1082,29 @@ const hPW  = s => h256(s, 'StratusAi_pw_s@lt_v1');
 const hPin = s => h256(s, 'StratusAi_pin_s@lt_v1');
 
 /* ════════════════════════════════════════════
-   APPS SCRIPT API — single fetch wrapper
-   All data reads/writes go through here.
-   Theme preference is the ONLY thing kept
-   in localStorage (harmless UI preference).
+   APPS SCRIPT API
+   Uses GET + ?payload=JSON to avoid CORS preflight.
+   Apps Script blocks POST from browsers (OPTIONS
+   preflight is never answered). GET requests work
+   perfectly and have no CORS restrictions.
 ════════════════════════════════════════════ */
 async function api(payload) {
   if (!SCRIPT_URL) throw new Error('Apps Script URL not configured. Go to Admin → Google Sheets and paste your Web App URL.');
-  const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload)
+  // Encode payload as URL parameter — avoids all CORS preflight issues
+  const url = SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url, {
+    method: 'GET',
+    redirect: 'follow'   // Apps Script redirects once — must follow
   });
   if (!res.ok) throw new Error('Network error ' + res.status);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text);
+    if (data.error) throw new Error(data.error);
+    return data;
+  } catch(e) {
+    throw new Error('Bad response from Apps Script: ' + text.substring(0, 100));
+  }
 }
 
 /* ════════════════════════════════════════════
