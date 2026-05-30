@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StratusAi Meeting</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://sheets.googleapis.com https://www.googleapis.com; img-src 'self' data:;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://script.google.com https://script.googleusercontent.com https://sheets.googleapis.com https://www.googleapis.com; img-src 'self' data:; connect-src *;">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
-   DESIGN SYSTEM — STRATUSAI ENTERPRISE 
+   DESIGN SYSTEM — STRATUSAI ENTERPRISE
    Palette: Deep navy + slate + steel blue accent
    Inspired by Bloomberg, Salesforce, Workday
 ═══════════════════════════════════════════ */
@@ -1056,7 +1056,7 @@ body{
    CONFIGURATION — paste your Apps Script URL here
    after deploying. That's the only thing to change.
 ════════════════════════════════════════════ */
-let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLrvVSctP4jxlwL26BXVhDsp3kSalN7Uoj8sCE6RTd6W_Azd5gk-p59ALqSiBYbBJEXQ/exec'; // ← paste your Web App URL here
+let SCRIPT_URL = ''; // ← paste your Web App URL here
 
 /* ════════════════════════════════════════════
    KNOWN USERS (identity only — credentials live in sheet)
@@ -1082,29 +1082,34 @@ const hPW  = s => h256(s, 'StratusAi_pw_s@lt_v1');
 const hPin = s => h256(s, 'StratusAi_pin_s@lt_v1');
 
 /* ════════════════════════════════════════════
-   APPS SCRIPT API
-   Uses GET + ?payload=JSON to avoid CORS preflight.
-   Apps Script blocks POST from browsers (OPTIONS
-   preflight is never answered). GET requests work
-   perfectly and have no CORS restrictions.
+   APPS SCRIPT API — GET + ?payload=JSON
 ════════════════════════════════════════════ */
 async function api(payload) {
-  if (!SCRIPT_URL) throw new Error('Apps Script URL not configured. Go to Admin → Google Sheets and paste your Web App URL.');
-  // Encode payload as URL parameter — avoids all CORS preflight issues
+  if (!SCRIPT_URL) throw new Error('Apps Script URL not set. Open Admin tab and paste your Web App URL.');
+
   const url = SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
-  const res = await fetch(url, {
-    method: 'GET',
-    redirect: 'follow'   // Apps Script redirects once — must follow
-  });
-  if (!res.ok) throw new Error('Network error ' + res.status);
-  const text = await res.text();
+
+  let res;
   try {
-    const data = JSON.parse(text);
-    if (data.error) throw new Error(data.error);
-    return data;
-  } catch(e) {
-    throw new Error('Bad response from Apps Script: ' + text.substring(0, 100));
+    res = await fetch(url, { redirect: 'follow' });
+  } catch(netErr) {
+    // This fires when the URL is wrong domain, blocked, or truly offline
+    throw new Error('Cannot reach Apps Script. Check the URL in Admin tab is correct and the deployment is set to "Anyone".');
   }
+
+  const text = await res.text();
+
+  // Apps Script sometimes returns HTML error pages — catch that
+  if (text.trim().startsWith('<')) {
+    throw new Error('Apps Script returned an HTML error page. Re-deploy with "Execute as: Me" and "Who has access: Anyone".');
+  }
+
+  let data;
+  try { data = JSON.parse(text); }
+  catch(e) { throw new Error('Bad JSON from Apps Script: ' + text.substring(0, 80)); }
+
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
 /* ════════════════════════════════════════════
