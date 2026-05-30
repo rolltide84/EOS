@@ -374,16 +374,16 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
 
 /* ===== RATING ROW CLASSES ===== */
 .rating-row-card{
-  padding:14px 16px;border-radius:var(--radius-lg);
+  padding:10px 12px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--surface2);
   transition:border-color .15s;
 }
-.rating-row-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.rating-row-inputs{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+.rating-row-header{display:none}/* hidden — name shown inline */
+.rating-row-inputs{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;width:100%}
 .rating-row-voted{
-  padding:12px 16px;border-radius:var(--radius-lg);
+  padding:10px 12px;border-radius:var(--radius);
   border:1px solid rgba(37,99,235,0.2);background:rgba(37,99,235,0.05);
-  display:flex;align-items:center;gap:12px;transition:border-color .15s;
+  display:flex;align-items:center;gap:10px;transition:border-color .15s;
 }
 
 /* ===== MOBILE TOPBAR ===== */
@@ -503,20 +503,12 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .timer-display{font-size:36px!important}
   .timer-seg{font-size:13px!important}
 
-  /* Rating rows: stacked layout */
-  .rating-row-card{padding:12px!important}
-  .rating-row-inputs{flex-wrap:wrap!important;gap:8px!important}
-  .rating-row-inputs input[type="number"]{
-    width:80px!important;flex-shrink:0;
-  }
-  .rating-row-inputs input[type="text"]{
-    width:100%!important;flex:unset!important;order:3;min-width:0!important;
-  }
-  .rating-row-inputs .btn{
-    width:100%!important;order:4;justify-content:center;
-  }
-  .rating-row-voted{padding:10px 12px!important;flex-wrap:wrap}
-  .rating-row-voted > div:nth-child(3){width:100%;justify-content:flex-start}
+  /* Rating rows: stay compact single line on mobile */
+  .rating-row-card{padding:8px 10px!important}
+  .rating-row-inputs{flex-wrap:nowrap!important;gap:5px!important}
+  .rating-row-inputs input[type="number"]{width:58px!important;flex-shrink:0}
+  .rating-row-inputs input[type="text"]{flex:1!important;min-width:0!important;font-size:11px!important}
+  .rating-row-voted{padding:8px 10px!important}
 
   /* Average row */
   #ratingAvgRow > div{flex-wrap:wrap!important;gap:10px!important}
@@ -865,7 +857,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
         </div>
         <div style="display:flex;flex-direction:column">
           <div class="highlight" id="l10Hint" style="order:0"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
-          <div class="card" id="ratingCard" style="order:2">
+          <div class="card" id="ratingCard" style="order:2;padding:12px">
             <div class="card-header" onclick="toggleRatingCard()" style="cursor:pointer;user-select:none">
               <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -874,19 +866,19 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               </div>
             </div>
             <div id="ratingCardBody">
-            <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--mono)">Enter each admin's rating below — all three can be submitted from any device. Average is saved to history.</p>
+            <p style="font-size:11px;color:var(--text3);margin-bottom:10px;font-family:var(--mono);line-height:1.4">All 3 admins rate 1–10. Average saved to history.</p>
 
             <!-- Per-admin rating rows — always visible -->
-            <div id="ratingInputArea" style="margin-bottom:16px;display:flex;flex-direction:column;gap:10px">
+            <div id="ratingInputArea" style="margin-bottom:12px;display:flex;flex-direction:column;gap:6px">
               <!-- Rows injected by renderRatingBoard() -->
             </div>
 
             <!-- Average + save row -->
-            <div id="ratingAvgRow" style="display:none;margin-top:4px;padding:14px 16px;border-radius:var(--radius-lg);background:linear-gradient(135deg,rgba(26,58,110,0.08),rgba(37,99,235,0.05));border:1px solid rgba(37,99,235,0.2)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div id="ratingAvgRow" style="display:none;margin-top:8px;padding:10px 14px;border-radius:var(--radius);background:linear-gradient(135deg,rgba(26,58,110,0.08),rgba(37,99,235,0.05));border:1px solid rgba(37,99,235,0.2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
                 <div>
                   <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:4px">Team Average</div>
-                  <div style="font-family:var(--display);font-size:34px;font-weight:700;color:var(--text);letter-spacing:-.5px;line-height:1" id="ratingAvgNum">—</div>
+                  <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--text);letter-spacing:-.5px;line-height:1" id="ratingAvgNum">—</div>
                   <div style="font-size:11px;color:var(--text2);margin-top:4px" id="ratingAvgSub"></div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
@@ -1611,95 +1603,77 @@ async function pollRatingState(){
 function renderRatingBoard(){
   const ratings = getRatings();
   const inputArea = document.getElementById('ratingInputArea');
-  const avgRow = document.getElementById('ratingAvgRow');
-  const badge = document.getElementById('ratingStatusBadge');
+  const avgRow    = document.getElementById('ratingAvgRow');
+  const badge     = document.getElementById('ratingStatusBadge');
   if(!inputArea) return;
 
   const myName = currentUser ? currentUser.firstName : '';
 
   inputArea.innerHTML = ADMIN_NAMES.map(function(name){
-    const vote = ratings[name];
-    const voted = vote !== undefined;
-    const isMe  = name === myName;
-    const youLabel = isMe
-      ? ' <span style="font-size:10px;color:var(--text3);font-weight:400">(you)</span>' : '';
-    const youLabelInput = isMe
-      ? ' <span style="font-size:10px;color:var(--accent2)">you</span>' : '';
+    const vote   = ratings[name];
+    const voted  = vote !== undefined;
+    const isMe   = name === myName;
     const scoreColor = !voted ? 'var(--text3)'
       : vote.value >= 8 ? 'var(--green)'
       : vote.value >= 5 ? 'var(--amber)' : 'var(--red)';
 
     if(voted){
+      // Compact voted row: avatar | name | score | note | clear
       const noteHtml = vote.note
-        ? '<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:2px;word-break:break-word">&ldquo;'
-          + vote.note + '&rdquo;</div>'
+        ? '<span style="font-size:11px;color:var(--text2);font-style:italic;'
+          + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">'
+          + '&ldquo;' + vote.note + '&rdquo;</span>'
         : '';
       return '<div class="rating-row-voted">'
-        + '<div style="width:36px;height:36px;border-radius:50%;'
+        + '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;'
         + 'background:linear-gradient(135deg,#1a3a6e,#2563eb);'
         + 'display:flex;align-items:center;justify-content:center;'
-        + 'font-size:14px;font-weight:700;color:white;flex-shrink:0">'
-        + name.charAt(0) + '</div>'
-        + '<div style="flex:1;min-width:0">'
-        + '<div style="font-size:13px;font-weight:600;color:var(--text)">'
-        + name + youLabel + '</div>'
+        + 'font-size:12px;font-weight:700;color:white">' + name.charAt(0) + '</div>'
+        + '<div style="font-size:12px;font-weight:600;color:var(--text);flex-shrink:0;min-width:54px">'
+        + name + (isMe ? ' <span style="font-size:10px;color:var(--text3)">(you)</span>' : '') + '</div>'
+        + '<div style="font-family:var(--display);font-size:22px;font-weight:700;'
+        + 'color:' + scoreColor + ';flex-shrink:0;line-height:1">' + vote.value + '</div>'
         + noteHtml
-        + '</div>'
-        + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">'
-        + '<div style="text-align:center">'
-        + '<div style="font-family:var(--display);font-size:28px;font-weight:700;'
-        + 'color:' + scoreColor + ';line-height:1">' + vote.value + '</div>'
-        + '<div style="font-size:9px;color:var(--text3);font-family:var(--mono)">/10</div>'
-        + '</div>'
-        + '<span class="badge badge-green" style="font-size:9px">'
-        + '<i class="ti ti-check" style="font-size:10px"></i> Voted</span>'
-        + '<button class="btn-icon btn-danger" style="opacity:.6" '
-        + 'onclick="clearOneName(\'' + name + '\')" title="Clear vote">'
+        + '<button class="btn-icon btn-danger" style="margin-left:auto;padding:6px;flex-shrink:0" '
+        + 'onclick="clearOneName(\'' + name + '\')">'
         + '<i class="ti ti-x" style="font-size:12px"></i></button>'
-        + '</div>'
         + '</div>';
     } else {
+      // Compact unvoted row: avatar | name | [score] [note...] [Submit]
       const inputId = 'rInput_' + name;
       const noteId  = 'rNote_'  + name;
       return '<div class="rating-row-card">'
-        + '<div class="rating-row-header">'
-        + '<div style="width:36px;height:36px;border-radius:50%;'
-        + 'background:var(--surface3);display:flex;align-items:center;'
-        + 'justify-content:center;font-size:14px;font-weight:700;'
-        + 'color:var(--text3);flex-shrink:0">' + name.charAt(0) + '</div>'
-        + '<div style="font-size:13px;font-weight:600;color:var(--text2)">'
-        + name + youLabelInput + '</div>'
-        + '</div>'
         + '<div class="rating-row-inputs">'
-        + '<input type="number" id="' + inputId + '" min="1" max="10" '
-        + 'placeholder="1–10" style="width:80px;flex-shrink:0;'
-        + 'font-family:var(--mono);font-size:16px;font-weight:600;text-align:center" '
-        + 'onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
-        + '<input type="text" id="' + noteId + '" '
-        + 'placeholder="What would make it a 10?" style="flex:1;min-width:0" '
-        + 'onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
-        + '<button class="btn btn-sm btn-primary" '
-        + 'style="flex-shrink:0;width:auto" '
-        + 'onclick="submitNameRating(\'' + name + '\')">'
-        + '<i class="ti ti-check"></i> Submit</button>'
+        + '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;'
+        + 'background:var(--surface3);display:flex;align-items:center;justify-content:center;'
+        + 'font-size:12px;font-weight:700;color:var(--text3)">' + name.charAt(0) + '</div>'
+        + '<div style="font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0;min-width:54px">'
+        + name + (isMe ? ' <span style="font-size:10px;color:var(--accent2)">you</span>' : '') + '</div>'
+        + '<input type="number" id="' + inputId + '" min="1" max="10" placeholder="1-10"'
+        + ' style="width:64px;flex-shrink:0;font-family:var(--mono);font-size:14px;'
+        + 'font-weight:700;text-align:center;padding:6px 4px"'
+        + ' onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
+        + '<input type="text" id="' + noteId + '" placeholder="Note (optional)"'
+        + ' style="flex:1;min-width:0;font-size:12px;padding:6px 8px"'
+        + ' onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
+        + '<button class="btn btn-sm btn-primary" style="flex-shrink:0;padding:6px 10px;min-height:unset"'
+        + ' onclick="submitNameRating(\'' + name + '\')">'
+        + '<i class="ti ti-check"></i></button>'
         + '</div>'
         + '</div>';
     }
   }).join('');
 
-  // Count & badge
+  // Badge
   const voteCount = Object.keys(ratings).length;
   const allVoted  = voteCount >= ADMIN_NAMES.length;
   if(badge){
     if(allVoted){
-      badge.className='badge badge-green';
-      badge.textContent='All votes in \u2713';
+      badge.className='badge badge-green'; badge.textContent='All votes in \u2713';
     } else if(voteCount > 0){
-      badge.className='badge badge-amber';
-      badge.textContent=voteCount+'/'+ADMIN_NAMES.length+' votes';
+      badge.className='badge badge-amber'; badge.textContent=voteCount+'/'+ADMIN_NAMES.length+' votes';
     } else {
-      badge.className='badge badge-blue';
-      badge.textContent='Waiting for votes';
+      badge.className='badge badge-blue'; badge.textContent='Waiting for votes';
     }
   }
 
@@ -1715,10 +1689,9 @@ function renderRatingBoard(){
       const avgSub = document.getElementById('ratingAvgSub');
       if(avgNum){ avgNum.textContent=avgRounded+'/10'; avgNum.style.color=avgColor; }
       if(avgSub){
-        const breakdown = ADMIN_NAMES.map(function(n){
+        avgSub.textContent = ADMIN_NAMES.map(function(n){
           return ratings[n] ? n+': '+ratings[n].value : n+': \u2014';
         }).join('  \u00b7  ');
-        avgSub.textContent=breakdown;
       }
     } else {
       avgRow.style.display='none';
