@@ -563,38 +563,24 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
               <span class="badge badge-blue" id="ratingStatusBadge">Waiting for votes</span>
             </div>
-            <p style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:var(--mono)">Each admin rates 1–10. Average is calculated once all votes are in and saved to history.</p>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--mono)">Enter each admin's rating below — all three can be submitted from any device. Average is saved to history.</p>
 
-            <!-- Individual rating inputs per user -->
-            <div id="ratingInputArea" style="margin-bottom:16px">
-              <div style="display:flex;gap:8px;align-items:flex-end">
-                <div>
-                  <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);display:block;margin-bottom:5px">Your Rating</label>
-                  <input type="number" id="meetingRating" min="1" max="10" placeholder="1–10" style="width:80px">
-                </div>
-                <div style="flex:1">
-                  <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);display:block;margin-bottom:5px">What would make it a 10?</label>
-                  <input type="text" id="ratingNote" placeholder="Optional note...">
-                </div>
-                <button class="btn btn-sm btn-primary" onclick="submitMyRating()" style="flex-shrink:0"><i class="ti ti-check"></i> Submit</button>
-              </div>
+            <!-- Per-admin rating rows — always visible -->
+            <div id="ratingInputArea" style="margin-bottom:16px;display:flex;flex-direction:column;gap:8px">
+              <!-- Rows injected by renderRatingBoard() -->
             </div>
 
-            <!-- Live vote board -->
-            <div style="border-top:1px solid var(--border);padding-top:14px">
-              <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:10px">Live Votes</div>
-              <div id="ratingVoteBoard" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"></div>
-              <div id="ratingAvgRow" style="display:none;padding:12px 16px;border-radius:var(--radius);background:linear-gradient(135deg,rgba(26,58,110,0.08),rgba(37,99,235,0.05));border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:space-between">
+            <!-- Average + save row -->
+            <div id="ratingAvgRow" style="display:none;margin-top:4px;padding:14px 16px;border-radius:var(--radius-lg);background:linear-gradient(135deg,rgba(26,58,110,0.08),rgba(37,99,235,0.05));border:1px solid rgba(37,99,235,0.2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
                 <div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)">Team Average</div>
-                  <div style="font-family:var(--display);font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.5px" id="ratingAvgNum">—</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:4px">Team Average</div>
+                  <div style="font-family:var(--display);font-size:34px;font-weight:700;color:var(--text);letter-spacing:-.5px;line-height:1" id="ratingAvgNum">—</div>
+                  <div style="font-size:11px;color:var(--text2);margin-top:4px" id="ratingAvgSub"></div>
                 </div>
-                <div style="text-align:right">
-                  <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="ratingAvgSub">All 3 admins voted</div>
-                  <div style="display:flex;gap:8px">
-                    <button class="btn btn-sm" onclick="clearRatings()"><i class="ti ti-refresh"></i> Reset</button>
-                    <button class="btn btn-sm btn-primary" onclick="saveRatingToHistory()"><i class="ti ti-device-floppy"></i> Save to History</button>
-                  </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                  <button class="btn btn-sm" onclick="clearRatings()"><i class="ti ti-refresh"></i> Reset All</button>
+                  <button class="btn btn-sm btn-primary" onclick="saveRatingToHistory()"><i class="ti ti-device-floppy"></i> Save to History</button>
                 </div>
               </div>
             </div>
@@ -1198,7 +1184,7 @@ function renderL10(){
   al.innerHTML=DB.attendees.map(a=>`<div class="attendee-chip" onclick="removeAttendee('${a}')"><div class="a-avatar">${a.charAt(0).toUpperCase()}</div>${a}</div>`).join('');
   document.getElementById('attendeeCount').textContent=DB.attendees.length;
   // Render rating board if on L10 page
-  if(typeof renderRatingBoard === 'function') renderRatingBoard();
+  if(typeof renderRatingBoard === 'function' && document.getElementById('ratingInputArea')) renderRatingBoard();
 }
 
 function startMeeting(){
@@ -1244,23 +1230,33 @@ const ADMIN_NAMES = Object.values(USERS).map(u => u.firstName); // ['Jeff','Jere
 function getRatings(){ try{ return JSON.parse(localStorage.getItem('stratus_active_ratings')||'{}'); }catch(e){ return {}; } }
 function saveRatings(r){ localStorage.setItem('stratus_active_ratings', JSON.stringify(r)); }
 
-function submitMyRating(){
-  const val = parseInt(document.getElementById('meetingRating').value);
-  const note = document.getElementById('ratingNote').value.trim();
-  if(!val || val<1 || val>10){ showToast('Enter a rating between 1 and 10','error'); return; }
-
+function submitNameRating(name){
+  const inputId = 'rInput_' + name;
+  const noteId  = 'rNote_'  + name;
+  const inputEl = document.getElementById(inputId);
+  const noteEl  = document.getElementById(noteId);
+  if(!inputEl){ showToast('Rating field not found','error'); return; }
+  const val = parseInt(inputEl.value);
+  const note = noteEl ? noteEl.value.trim() : '';
+  if(!val || val<1 || val>10){ showToast(`Enter a rating 1–10 for ${name}`,'error'); inputEl.focus(); return; }
   const ratings = getRatings();
-  ratings[currentUser.firstName] = { value: val, note, timestamp: Date.now() };
+  ratings[name] = { value: val, note, timestamp: Date.now() };
   saveRatings(ratings);
-
-  // Also push rating state to Sheets so other devices pick it up
   pushRatingState(ratings);
-
-  document.getElementById('meetingRating').value = '';
-  document.getElementById('ratingNote').value = '';
-  showToast(`Your rating of ${val}/10 submitted!`, 'success');
+  showToast(`${name} rated ${val}/10 ✓`, 'success');
   renderRatingBoard();
 }
+
+function clearOneName(name){
+  const ratings = getRatings();
+  delete ratings[name];
+  saveRatings(ratings);
+  pushRatingState(ratings);
+  renderRatingBoard();
+}
+
+// Legacy stubs for compatibility
+function submitMyRating(){ submitNameRating(currentUser?.firstName||ADMIN_NAMES[0]); }
 
 async function pushRatingState(ratings){
   const cfg = getSheetBase(); if(!cfg) return;
@@ -1299,81 +1295,112 @@ async function pollRatingState(){
 
 function renderRatingBoard(){
   const ratings = getRatings();
-  const board = document.getElementById('ratingVoteBoard');
+  const inputArea = document.getElementById('ratingInputArea');
   const avgRow = document.getElementById('ratingAvgRow');
   const badge = document.getElementById('ratingStatusBadge');
-  const inputArea = document.getElementById('ratingInputArea');
-  if(!board) return;
+  if(!inputArea) return;
 
   const myName = currentUser?.firstName;
-  const alreadyVoted = ratings[myName] !== undefined;
 
-  // Show/hide input
-  if(inputArea) inputArea.style.display = alreadyVoted ? 'none' : '';
-
-  // Render vote cards
-  board.innerHTML = ADMIN_NAMES.map(name => {
+  // Build one row per admin — always shown, locked after voting
+  inputArea.innerHTML = ADMIN_NAMES.map(name => {
     const vote = ratings[name];
-    const isMe = name === myName;
     const voted = vote !== undefined;
+    const isMe = name === myName;
     const scoreColor = !voted ? 'var(--text3)' :
       vote.value >= 8 ? 'var(--green)' :
       vote.value >= 5 ? 'var(--amber)' : 'var(--red)';
-    return `<div style="
-      padding:14px 16px;border-radius:var(--radius-lg);
-      border:1px solid ${voted ? 'rgba(37,99,235,0.25)' : 'var(--border)'};
-      background:${voted ? 'rgba(37,99,235,0.06)' : 'var(--surface2)'};
-      text-align:center;transition:all .2s;
-    ">
-      <div style="width:32px;height:32px;border-radius:50%;
-        background:${voted ? 'linear-gradient(135deg,#1a3a6e,#2563eb)' : 'var(--surface3)'};
-        display:flex;align-items:center;justify-content:center;
-        font-size:13px;font-weight:700;color:${voted?'white':'var(--text3)'};
-        margin:0 auto 8px;
-      ">${name.charAt(0)}</div>
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">${name}${isMe?' (you)':''}</div>
-      ${voted ? `
-        <div style="font-family:var(--display);font-size:26px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:4px">${vote.value}</div>
-        <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">RATED</div>
-        ${vote.note ? `<div style="font-size:10px;color:var(--text2);margin-top:5px;font-style:italic">"${vote.note}"</div>` : ''}
-      ` : `
-        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px">Waiting...</div>
-        <div style="width:28px;height:3px;background:var(--border);border-radius:2px;margin:6px auto 0;
-          position:relative;overflow:hidden;">
-          <div style="position:absolute;top:0;left:-100%;width:100%;height:100%;
-            background:var(--accent2);animation:shimmer 1.5s infinite;"></div>
+
+    if(voted){
+      // Locked submitted row
+      return `<div style="
+        display:flex;align-items:center;gap:12px;
+        padding:12px 16px;border-radius:var(--radius-lg);
+        background:rgba(37,99,235,0.05);
+        border:1px solid rgba(37,99,235,0.18);
+        transition:all .2s;
+      ">
+        <div style="width:34px;height:34px;border-radius:50%;
+          background:linear-gradient(135deg,#1a3a6e,#2563eb);
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;font-weight:700;color:white;flex-shrink:0;">
+          ${name.charAt(0)}
         </div>
-      `}
-    </div>`;
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${name}${isMe?' <span style='font-size:10px;color:var(--text3);font-weight:400'>(you)</span>':''}</div>
+          ${vote.note ? `<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"${vote.note}"</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div style="text-align:center">
+            <div style="font-family:var(--display);font-size:28px;font-weight:700;color:${scoreColor};line-height:1">${vote.value}</div>
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em">/ 10</div>
+          </div>
+          <span class="badge badge-green" style="font-size:9px"><i class="ti ti-check" style="font-size:10px"></i> Voted</span>
+          <button class="btn-icon btn-danger" onclick="clearOneName('${name}')" title="Clear ${name}'s vote" style="opacity:.6">
+            <i class="ti ti-x" style="font-size:12px"></i>
+          </button>
+        </div>
+      </div>`;
+    } else {
+      // Input row — available for anyone to fill in
+      const inputId = 'rInput_' + name;
+      const noteId  = 'rNote_'  + name;
+      return `<div style="
+        display:flex;align-items:center;gap:10px;
+        padding:12px 16px;border-radius:var(--radius-lg);
+        background:var(--surface2);border:1px solid var(--border);
+        transition:all .2s;
+      ">
+        <div style="width:34px;height:34px;border-radius:50%;
+          background:var(--surface3);
+          display:flex;align-items:center;justify-content:center;
+          font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0;">
+          ${name.charAt(0)}
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--text2);min-width:64px;flex-shrink:0">
+          ${name}${isMe?' <span style='font-size:10px;color:var(--accent2)'>↩ you</span>':''}
+        </div>
+        <input type="number" id="${inputId}" min="1" max="10" placeholder="1–10"
+          style="width:76px;flex-shrink:0;font-family:var(--mono);font-size:14px;font-weight:600;text-align:center"
+          onkeydown="if(event.key==='Enter')submitNameRating('${name}')">
+        <input type="text" id="${noteId}" placeholder="What would make it a 10? (optional)"
+          style="flex:1"
+          onkeydown="if(event.key==='Enter')submitNameRating('${name}')">
+        <button class="btn btn-sm btn-primary" onclick="submitNameRating('${name}')" style="flex-shrink:0">
+          <i class="ti ti-check"></i> Submit
+        </button>
+      </div>`;
+    }
   }).join('');
 
-  // Count votes
+  // Count & badge
   const voteCount = Object.keys(ratings).length;
   const allVoted = voteCount >= ADMIN_NAMES.length;
-
-  // Update badge
   if(badge){
     if(allVoted){
-      badge.className='badge badge-green';
-      badge.textContent='All votes in ✓';
+      badge.className='badge badge-green'; badge.textContent='All votes in ✓';
+    } else if(voteCount > 0){
+      badge.className='badge badge-amber'; badge.textContent=`${voteCount}/${ADMIN_NAMES.length} votes`;
     } else {
-      badge.className='badge badge-amber';
-      badge.textContent=`${voteCount}/${ADMIN_NAMES.length} votes`;
+      badge.className='badge badge-blue'; badge.textContent='Waiting for votes';
     }
   }
 
-  // Show/hide average
+  // Average row
   if(avgRow){
-    if(allVoted || voteCount >= 2){
-      avgRow.style.display='flex';
+    if(voteCount >= 1){
+      avgRow.style.display='block';
       const votes = Object.values(ratings).map(v=>v.value);
-      const avg = (votes.reduce((a,b)=>a+b,0)/votes.length);
+      const avg = votes.reduce((a,b)=>a+b,0)/votes.length;
       const avgRounded = Math.round(avg*10)/10;
       const avgColor = avgRounded>=8?'var(--green)':avgRounded>=5?'var(--amber)':'var(--red)';
       const avgNum = document.getElementById('ratingAvgNum');
       const avgSub = document.getElementById('ratingAvgSub');
       if(avgNum){ avgNum.textContent=avgRounded+'/10'; avgNum.style.color=avgColor; }
-      if(avgSub){ avgSub.textContent= allVoted ? 'All 3 admins voted ✓' : `${voteCount} of ${ADMIN_NAMES.length} voted`; }
+      if(avgSub){
+        const breakdown = ADMIN_NAMES.map(n=>ratings[n]?`${n}: ${ratings[n].value}`:`${n}: —`).join('  ·  ');
+        avgSub.textContent = breakdown;
+      }
     } else {
       avgRow.style.display='none';
     }
