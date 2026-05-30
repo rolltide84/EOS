@@ -62,7 +62,7 @@
   --cyan:#2563eb;--cyan-dim:rgba(37,99,235,0.08);
 }
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;overflow:hidden;transition:background .3s,color .3s}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;transition:background .3s,color .3s}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -72,6 +72,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .screen.active{display:flex;align-items:center;justify-content:center}
 #appScreen{display:none;position:fixed;inset:0;z-index:1;flex-direction:row}
 #appScreen.active{display:flex}
+@media(max-width:768px){#appScreen{position:relative;inset:auto;min-height:100vh}}
 
 /* ===== AUTH SCREENS ===== */
 .auth-card{
@@ -351,6 +352,156 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
 @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 #toast.show{display:flex}
 #toast i{font-size:16px}
+
+/* ===== MOBILE TOPBAR ===== */
+.mobile-topbar{
+  display:none;
+  position:fixed;top:0;left:0;right:0;height:54px;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  z-index:40;align-items:center;justify-content:space-between;
+  padding:0 16px;
+}
+.hamburger-btn{
+  background:none;border:none;color:var(--text);cursor:pointer;
+  padding:6px;border-radius:var(--radius);transition:background .15s;
+  display:flex;align-items:center;
+}
+.hamburger-btn:hover{background:var(--surface2)}
+.hamburger-btn i{font-size:22px}
+.sidebar-close-btn{
+  display:none;background:none;border:none;color:var(--text2);
+  cursor:pointer;padding:6px;border-radius:var(--radius);
+  transition:background .15s;
+}
+.sidebar-close-btn:hover{background:var(--surface2)}
+.sidebar-close-btn i{font-size:18px}
+
+/* SIDEBAR OVERLAY */
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);z-index:29;
+  backdrop-filter:blur(2px);
+}
+.sidebar-overlay.active{display:block}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+@media (max-width: 768px){
+  /* Show mobile topbar, hide on desktop */
+  .mobile-topbar{display:flex}
+  .sidebar-close-btn{display:flex;align-items:center}
+
+  /* App becomes column layout */
+  .app{flex-direction:column;height:auto;overflow:visible}
+
+  /* Main content shifts down for topbar */
+  .main{padding-top:54px;overflow-y:auto;min-height:100vh;height:auto}
+
+  /* Sidebar becomes slide-in drawer */
+  .sidebar{
+    position:fixed;top:0;left:-100%;
+    width:280px;min-width:280px;
+    height:100vh;z-index:30;
+    transition:left .25s ease;
+    box-shadow:4px 0 24px rgba(0,0,0,0.3);
+  }
+  .sidebar.open{left:0}
+  .sidebar-overlay.active{display:block}
+
+  /* Page padding tighter on mobile */
+  .page{padding:16px 14px}
+  .page-header{flex-direction:column;gap:10px;align-items:flex-start}
+  .page-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}
+
+  /* Stats grid: 2 columns on mobile */
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat-value{font-size:22px}
+
+  /* Form rows stack on mobile */
+  .form-row-2{grid-template-columns:1fr}
+  .form-row-3{grid-template-columns:1fr}
+
+  /* Timer bar stacks */
+  .timer-bar{flex-direction:column;gap:10px;padding:14px}
+  .timer-display{font-size:36px}
+
+  /* L10 agenda layout stacks */
+  .l10-grid{grid-template-columns:1fr !important;display:flex !important;flex-direction:column !important}
+
+  /* Issue rows */
+  .issue-row{flex-wrap:wrap;gap:8px}
+  .issue-body{min-width:0;width:100%}
+
+  /* Rock header stacks */
+  .rock-header{flex-direction:column;gap:8px}
+  .rock-header > div:last-child{width:100%;justify-content:flex-start}
+
+  /* Tables scroll horizontally */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-scroll table{min-width:500px}
+
+  /* Score table specifically */
+  #scorecardTable th, #scorecardTable td{padding:8px 6px;font-size:11px}
+
+  /* Modal wider on small screens */
+  .modal{padding:20px;max-width:100%;width:96%;border-radius:var(--radius-lg)}
+
+  /* Attendee chips wrap */
+  #attendeeList{gap:4px}
+  .attendee-chip{font-size:11px}
+
+  /* Card padding tighter */
+  .card{padding:14px}
+  .card-header{margin-bottom:12px}
+
+  /* Page title smaller */
+  .page-title{font-size:20px}
+  .page-eyebrow{font-size:9px}
+  .page-sub{font-size:12px}
+
+  /* Nav badge positioning */
+  .nav-badge{min-width:18px;text-align:center}
+
+  /* Sidebar footer compact */
+  .sidebar-footer{padding:10px}
+
+  /* Hide desktop theme toggle in sidebar on mobile (use topbar one) */
+  .theme-toggle{display:none}
+
+  /* Rating board stacks on mobile */
+  #ratingInputArea > div{flex-wrap:wrap;gap:6px}
+
+  /* Tabs scroll if needed */
+  .tabs{overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
+
+  /* VTO grid stacks */
+  .vto-grid{grid-template-columns:1fr !important}
+
+  /* History rows */
+  .history-row{flex-direction:column;align-items:flex-start;gap:8px}
+  .history-row > div:last-child{width:100%;flex-wrap:wrap}
+
+  /* Admin rows */
+  .admin-row{flex-wrap:wrap;gap:8px}
+  .admin-row > div:last-child{width:100%;flex-wrap:wrap}
+
+  /* Toast bottom safe area */
+  #toast{bottom:16px;right:12px;left:12px;max-width:100%}
+}
+
+@media (max-width: 480px){
+  .page{padding:12px 10px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat-value{font-size:20px}
+  .stat-label{font-size:9px}
+  .btn{padding:8px 12px;font-size:12px}
+  .btn-primary{font-size:12px}
+  .page-title{font-size:18px}
+  .timer-display{font-size:32px}
+  .agenda-title{font-size:11px}
+  .issue-votes{min-width:28px}
+  .vote-count{font-size:16px}
+}
+
 </style>
 </head>
 <body>
@@ -455,6 +606,26 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
 <!-- ===== APP ===== -->
 <div id="appScreen">
 
+  <!-- MOBILE TOPBAR -->
+  <div class="mobile-topbar" id="mobileTopbar">
+    <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="logo-icon" style="width:26px;height:26px;font-size:13px"><i class="ti ti-cloud"></i></div>
+      <span class="logo-text" style="font-size:15px">Stratus<span>Ai</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="user-avatar" id="mobileAvatar" style="width:28px;height:28px;font-size:11px"></div>
+      <button class="btn-icon" onclick="toggleTheme()" style="padding:6px" aria-label="Toggle theme">
+        <i class="ti ti-sun" id="mobileThemeIcon" style="font-size:18px"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
   <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sidebar-logo" style="padding:14px 16px">
@@ -547,7 +718,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:220px 1fr;gap:16px">
+      <div class="l10-grid" style="display:grid;grid-template-columns:220px 1fr;gap:16px">
         <div>
           <div class="card" style="margin-bottom:0">
             <div class="card-header"><div class="card-title"><i class="ti ti-list-check"></i> Agenda</div><span class="badge badge-blue">60 min</span></div>
@@ -685,7 +856,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
       <div class="page-header">
         <div><div class="page-eyebrow">EOS · Strategic Planning</div><div class="page-title">Vision / Traction Organizer</div><div class="page-sub">Revisit at your quarterly offsite</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="vto-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div>
           <div class="card">
             <div class="card-header"><div class="card-title"><i class="ti ti-diamond"></i> Core Values</div></div>
@@ -1082,6 +1253,8 @@ function initApp(){
   document.getElementById('sidebarAvatar').textContent = currentUser.firstName.charAt(0);
   document.getElementById('sidebarName').textContent = currentUser.firstName;
   document.getElementById('sidebarRole').textContent = currentUser.isAdmin ? 'Admin' : 'Member';
+  const ma = document.getElementById('mobileAvatar');
+  if(ma) ma.textContent = currentUser.firstName.charAt(0);
   // Show admin nav if admin
   document.getElementById('nav-admin').style.display = currentUser.isAdmin ? '' : 'none';
   // Set theme
@@ -1123,6 +1296,8 @@ function applyTheme(){
   const label = document.getElementById('themeLabel');
   if(icon) icon.className = isDark ? 'ti ti-sun' : 'ti ti-moon';
   if(label) label.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  const micon = document.getElementById('mobileThemeIcon');
+  if(micon) micon.className = isDark ? 'ti ti-sun' : 'ti ti-moon';
 }
 function loadTheme(){
   const saved = localStorage.getItem('stratus_theme');
@@ -1790,6 +1965,33 @@ async function testConnection(){
 function exportData(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='stratus-hub-data.json'; a.click(); }
 function importData(){ try{ const d=JSON.parse(document.getElementById('importJson').value); DB={...DB,...d}; saveDB(); closeModal('importModal'); showToast('Data imported!','success'); nav('l10'); }catch(e){ showToast('Invalid JSON: '+e.message,'error'); } }
 function clearData(){ DB={...DB,issues:[],todos:[],rocks:[],scorecard:[],headlines:[],vto:{values:[],goals:[]},attendees:[],meetings:[]}; saveDB(); showToast('Data cleared'); renderL10(); }
+
+// ============================================================
+// MOBILE SIDEBAR
+// ============================================================
+function openSidebar(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('active');
+  document.body.style.overflow='hidden';
+}
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+  document.body.style.overflow='';
+}
+// Close sidebar when a nav item is clicked on mobile
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(window.innerWidth<=768) closeSidebar();
+    });
+  });
+  document.querySelectorAll('.footer-btn, .settings-btn').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(window.innerWidth<=768) closeSidebar();
+    });
+  });
+});
 
 // ============================================================
 // INIT
