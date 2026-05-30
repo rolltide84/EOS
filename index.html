@@ -49,7 +49,7 @@
   --cyan:#2563eb;--cyan-dim:rgba(37,99,235,0.08);
 }
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;transition:background .3s,color .3s}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;transition:background .3s,color .3s;overflow-x:hidden}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -386,31 +386,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   display:flex;align-items:center;gap:10px;transition:border-color .15s;
 }
 
-/* ===== MOBILE TOPBAR ===== */
-.mobile-topbar{
-  display:none;position:fixed;top:0;left:0;right:0;height:52px;
-  background:var(--bg2);border-bottom:1px solid var(--border);
-  z-index:40;align-items:center;justify-content:space-between;padding:0 14px;
-}
-.hamburger-btn{
-  display:flex;align-items:center;justify-content:center;
-  background:none;border:1px solid var(--border);color:var(--text);
-  cursor:pointer;padding:7px;border-radius:var(--radius);
-  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-}
-.hamburger-btn i{font-size:20px}
-.sidebar-close-btn{
-  display:none;align-items:center;justify-content:center;
-  background:none;border:none;color:var(--text2);cursor:pointer;
-  padding:6px;border-radius:var(--radius);
-  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-}
-.sidebar-close-btn i{font-size:18px}
-.sidebar-overlay{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);
-  z-index:29;-webkit-tap-highlight-color:transparent;
-}
-.sidebar-overlay.active{display:block}
+
 
 /* ===== MOBILE BREAKPOINT 768px ===== */
 @media screen and (max-width:768px){
@@ -436,7 +412,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .main{
     width:100%;
     max-width:100vw;
-    padding-top:52px;
+    padding-top:56px;
     height:100vh;
     overflow-y:scroll;
     overflow-x:hidden;
