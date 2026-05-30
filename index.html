@@ -855,9 +855,19 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
             <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Total</span><span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:600">60:00</span></div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column">
-          <div class="highlight" id="l10Hint" style="order:0"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
-          <div class="card" id="ratingCard" style="order:2;padding:12px">
+        <div>
+          <div class="highlight" id="l10Hint"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
+          <div class="card" id="attendeesCard">
+            <div class="card-header"><div class="card-title"><i class="ti ti-users"></i> Attendees</div><span class="badge badge-gray" id="attendeeCount">0</span></div>
+            <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:28px"></div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="newAttendee" placeholder="Add attendee name..." onkeydown="if(event.key==='Enter')addAttendee()">
+              <button class="btn btn-sm btn-primary" onclick="addAttendee()" style="flex-shrink:0"><i class="ti ti-plus"></i> Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+          <div class="card" id="ratingCard" style="padding:12px">
             <div class="card-header" onclick="toggleRatingCard()" style="cursor:pointer;user-select:none">
               <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -888,16 +898,6 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               </div>
             </div>
           </div>
-          <div class="card" id="attendeesCard" style="order:1">
-            <div class="card-header"><div class="card-title"><i class="ti ti-users"></i> Attendees</div><span class="badge badge-gray" id="attendeeCount">0</span></div>
-            <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:28px"></div>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="newAttendee" placeholder="Add attendee name..." onkeydown="if(event.key==='Enter')addAttendee()">
-              <button class="btn btn-sm btn-primary" onclick="addAttendee()" style="flex-shrink:0"><i class="ti ti-plus"></i> Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ===== ISSUES ===== -->
