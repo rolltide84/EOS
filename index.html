@@ -407,16 +407,16 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .rating-topbar-btn{display:flex}
 }
 .rating-row-card{
-  padding:10px 12px;border-radius:var(--radius);
+  padding:6px 10px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--surface2);
   transition:border-color .15s;
 }
 .rating-row-header{display:none}/* hidden — name shown inline */
-.rating-row-inputs{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;width:100%}
+.rating-row-inputs{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;width:100%;overflow:hidden}
 .rating-row-voted{
-  padding:10px 12px;border-radius:var(--radius);
+  padding:6px 10px;border-radius:var(--radius);
   border:1px solid rgba(37,99,235,0.2);background:rgba(37,99,235,0.05);
-  display:flex;align-items:center;gap:10px;transition:border-color .15s;
+  display:flex;align-items:center;gap:8px;transition:border-color .15s;overflow:hidden;
 }
 
 
@@ -497,10 +497,11 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .tabs::-webkit-scrollbar{display:none}
   .tab{flex-shrink:0;white-space:nowrap;padding:6px 14px!important}
 
-  /* L10 grid: stack */
+  /* L10 grid: stack — inline style needs override */
   .l10-grid{
-    display:flex!important;flex-direction:column!important;gap:10px!important;
+    display:block!important;grid-template-columns:unset!important;gap:10px!important;
   }
+  .l10-grid > div{width:100%!important}
 
   /* Timer: stack vertically */
   .timer-bar{
@@ -567,9 +568,6 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .admin-row > div:last-child{width:100%!important;flex-wrap:wrap!important}
   .admin-avatar{flex-shrink:0}
 
-  /* Hide desktop rating card on mobile — use rating panel instead */
-  #ratingCard{display:none!important}
-
   /* Attendee chips */
   .attendee-chip{font-size:11px!important}
 
@@ -624,6 +622,18 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .page > *{max-width:100%;box-sizing:border-box}
   input,select,textarea{max-width:100%;box-sizing:border-box}
 }
+
+  /* Rating card: compact on mobile */
+  #ratingCard{padding:8px!important}
+  #ratingInputArea{gap:4px!important}
+  .rating-row-card{padding:5px 8px!important}
+  .rating-row-voted{padding:5px 8px!important;gap:6px!important}
+  .rating-row-inputs{gap:4px!important}
+  .rating-row-inputs input[type="number"]{width:46px!important;font-size:12px!important;padding:4px 2px!important;flex-shrink:0!important}
+  .rating-row-inputs input[type="text"]{min-width:0!important;flex:1!important;font-size:10px!important;padding:4px 5px!important}
+  .rating-row-inputs .btn{padding:4px 7px!important;font-size:11px!important}
+  #ratingAvgNum{font-size:22px!important}
+  #ratingAvgRow{padding:8px 10px!important;margin-top:6px!important}
 
 /* ===== MOBILE BREAKPOINT 480px ===== */
 @media screen and (max-width:480px){
@@ -759,7 +769,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
       <span class="logo-text" style="font-size:15px">Stratus<span>Ai</span></span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="rating-topbar-btn" onclick="openRatingPanel()" id="ratingTopbarBtn" aria-label="Rate meeting">
+      <button class="rating-topbar-btn" onclick="document.getElementById('ratingCard').scrollIntoView({behavior:'smooth',block:'start'})" id="ratingTopbarBtn" aria-label="Rate meeting">
         <i class="ti ti-star"></i> Rate
       </button>
       <div class="user-avatar" id="mobileAvatar" style="width:28px;height:28px;font-size:11px"></div>
@@ -876,7 +886,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
         </div>
       </div>
 
-      <div class="l10-grid" style="display:grid;grid-template-columns:220px 1fr;gap:16px">
+      <div class="l10-grid" style="display:grid;grid-template-columns:220px 1fr;gap:16px;min-width:0">
         <div>
           <div class="card" style="margin-bottom:0">
             <div class="card-header"><div class="card-title"><i class="ti ti-list-check"></i> Agenda</div><span class="badge badge-blue">60 min</span></div>
@@ -1675,19 +1685,19 @@ function renderRatingBoard(){
       const noteId  = 'rNote_'  + name;
       return '<div class="rating-row-card">'
         + '<div class="rating-row-inputs">'
-        + '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;'
+        + '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;'
         + 'background:var(--surface3);display:flex;align-items:center;justify-content:center;'
-        + 'font-size:12px;font-weight:700;color:var(--text3)">' + name.charAt(0) + '</div>'
-        + '<div style="font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0;min-width:54px">'
-        + name + (isMe ? ' <span style="font-size:10px;color:var(--accent2)">you</span>' : '') + '</div>'
+        + 'font-size:11px;font-weight:700;color:var(--text3)">' + name.charAt(0) + '</div>'
+        + '<div style="font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0;min-width:40px;max-width:50px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'
+        + name + (isMe ? ' <span style="font-size:9px;color:var(--accent2)">you</span>' : '') + '</div>'
         + '<input type="number" id="' + inputId + '" min="1" max="10" placeholder="1-10"'
-        + ' style="width:64px;flex-shrink:0;font-family:var(--mono);font-size:14px;'
-        + 'font-weight:700;text-align:center;padding:6px 4px"'
+        + ' style="width:52px;flex-shrink:0;font-family:var(--mono);font-size:13px;'
+        + 'font-weight:700;text-align:center;padding:5px 2px"'
         + ' onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
-        + '<input type="text" id="' + noteId + '" placeholder="Note (optional)"'
-        + ' style="flex:1;min-width:0;font-size:12px;padding:6px 8px"'
+        + '<input type="text" id="' + noteId + '" placeholder="Note…"'
+        + ' style="flex:1;min-width:0;font-size:11px;padding:5px 6px"'
         + ' onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
-        + '<button class="btn btn-sm btn-primary" style="flex-shrink:0;padding:6px 10px;min-height:unset"'
+        + '<button class="btn btn-sm btn-primary" style="flex-shrink:0;padding:5px 8px;min-height:unset"'
         + ' onclick="submitNameRating(\'' + name + '\')">'
         + '<i class="ti ti-check"></i></button>'
         + '</div>'
