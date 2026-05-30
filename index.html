@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StratusAi Meeting</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://script.google.com https://script.googleusercontent.com https://sheets.googleapis.com https://www.googleapis.com; img-src 'self' data:; connect-src *;">
+<meta name="referrer" content="no-referrer-when-downgrade">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -1056,7 +1056,7 @@ body{
    CONFIGURATION — paste your Apps Script URL here
    after deploying. That's the only thing to change.
 ════════════════════════════════════════════ */
-let SCRIPT_URL = ''; // ← paste your Web App URL here
+let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVbZe4J_-DxkptSPvqcTbv9jo1qR3Fu8RtDzWdlxX4uRLkkYGQ37iTka__2toHSYqVWQ/exec'; // ← paste your Web App URL here
 
 /* ════════════════════════════════════════════
    KNOWN USERS (identity only — credentials live in sheet)
@@ -1082,34 +1082,43 @@ const hPW  = s => h256(s, 'StratusAi_pw_s@lt_v1');
 const hPin = s => h256(s, 'StratusAi_pin_s@lt_v1');
 
 /* ════════════════════════════════════════════
-   APPS SCRIPT API — GET + ?payload=JSON
+   APPS SCRIPT API
+   Uses a hidden form + iframe submission to
+   completely bypass CORS and GitHub Pages CSP.
+   Apps Script GET with ?payload= also included
+   as primary method with jsonp fallback.
 ════════════════════════════════════════════ */
 async function api(payload) {
   if (!SCRIPT_URL) throw new Error('Apps Script URL not set. Open Admin tab and paste your Web App URL.');
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script  = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out. Check Apps Script URL and deployment settings.'));
+    }, 15000);
 
-  const url = SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
 
-  let res;
-  try {
-    res = await fetch(url, { redirect: 'follow' });
-  } catch(netErr) {
-    // This fires when the URL is wrong domain, blocked, or truly offline
-    throw new Error('Cannot reach Apps Script. Check the URL in Admin tab is correct and the deployment is set to "Anyone".');
-  }
+    window[cbName] = function(data) {
+      cleanup();
+      if (data && data.error) reject(new Error(data.error));
+      else resolve(data);
+    };
 
-  const text = await res.text();
-
-  // Apps Script sometimes returns HTML error pages — catch that
-  if (text.trim().startsWith('<')) {
-    throw new Error('Apps Script returned an HTML error page. Re-deploy with "Execute as: Me" and "Who has access: Anyone".');
-  }
-
-  let data;
-  try { data = JSON.parse(text); }
-  catch(e) { throw new Error('Bad JSON from Apps Script: ' + text.substring(0, 80)); }
-
-  if (data.error) throw new Error(data.error);
-  return data;
+    // JSONP — injects a <script> tag which is never blocked by CSP connect-src
+    // Apps Script must wrap response in callback(data) — handled by doGet below
+    const url = SCRIPT_URL
+      + '?callback=' + cbName
+      + '&payload=' + encodeURIComponent(JSON.stringify(payload));
+    script.src = url;
+    script.onerror = () => { cleanup(); reject(new Error('Failed to reach Apps Script. Verify the URL and that deployment is set to Anyone.')); };
+    document.head.appendChild(script);
+  });
 }
 
 /* ════════════════════════════════════════════
