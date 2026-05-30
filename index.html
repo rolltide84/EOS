@@ -372,7 +372,40 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   pointer-events:auto;
 }
 
-/* ===== RATING ROW CLASSES ===== */
+/* ===== RATING PANEL (slide-in from right on mobile, modal on desktop) ===== */
+.rating-panel-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  z-index:50;-webkit-tap-highlight-color:transparent;
+}
+.rating-panel-overlay.open{display:block}
+.rating-panel{
+  position:fixed;top:0;right:-100%;width:340px;max-width:96vw;height:100vh;
+  background:var(--surface);border-left:1px solid var(--border2);
+  z-index:51;overflow-y:auto;transition:right .22s ease;
+  display:flex;flex-direction:column;
+  box-shadow:-8px 0 32px rgba(0,0,0,0.25);
+}
+.rating-panel.open{right:0}
+.rating-panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--bg2);position:sticky;top:0;z-index:1;
+}
+.rating-panel-title{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text)}
+.rating-panel-body{flex:1;padding:18px;overflow-y:auto}
+/* Rating trigger button in topbar */
+.rating-topbar-btn{
+  display:none;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--border);color:var(--text);
+  cursor:pointer;padding:7px 10px;border-radius:var(--radius);
+  gap:6px;font-size:12px;font-weight:500;font-family:var(--font);
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  white-space:nowrap;
+}
+.rating-topbar-btn i{font-size:16px}
+@media screen and (max-width:768px){
+  .rating-topbar-btn{display:flex}
+}
 .rating-row-card{
   padding:10px 12px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--surface2);
@@ -530,6 +563,9 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .admin-row{flex-wrap:wrap!important;gap:8px!important}
   .admin-row > div:last-child{width:100%!important;flex-wrap:wrap!important}
   .admin-avatar{flex-shrink:0}
+
+  /* Hide desktop rating card on mobile — use rating panel instead */
+  #ratingCard{display:none!important}
 
   /* Attendee chips */
   .attendee-chip{font-size:11px!important}
@@ -719,7 +755,10 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
       <div class="logo-icon" style="width:26px;height:26px;font-size:13px"><i class="ti ti-cloud"></i></div>
       <span class="logo-text" style="font-size:15px">Stratus<span>Ai</span></span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="rating-topbar-btn" onclick="openRatingPanel()" id="ratingTopbarBtn" aria-label="Rate meeting">
+        <i class="ti ti-star"></i> Rate
+      </button>
       <div class="user-avatar" id="mobileAvatar" style="width:28px;height:28px;font-size:11px"></div>
       <button class="btn-icon" onclick="toggleTheme()" style="padding:6px" aria-label="Toggle theme">
         <i class="ti ti-sun" id="mobileThemeIcon" style="font-size:18px"></i>
@@ -729,6 +768,18 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
 
   <!-- SIDEBAR OVERLAY (mobile) -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- RATING PANEL (slide-in from right) -->
+  <div class="rating-panel-overlay" id="ratingPanelOverlay" onclick="closeRatingPanel()"></div>
+  <div class="rating-panel" id="ratingPanel">
+    <div class="rating-panel-header">
+      <div class="rating-panel-title"><i class="ti ti-star" style="color:var(--accent2);margin-right:6px"></i>Meeting Rating</div>
+      <button class="btn-icon" onclick="closeRatingPanel()" aria-label="Close"><i class="ti ti-x" style="font-size:18px"></i></button>
+    </div>
+    <div class="rating-panel-body" id="ratingPanelBody">
+      <!-- Content mirrored from ratingCard -->
+    </div>
+  </div>
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
@@ -841,9 +892,8 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               <button class="btn btn-sm btn-primary" onclick="addAttendee()" style="flex-shrink:0"><i class="ti ti-plus"></i> Add</button>
             </div>
           </div>
-        </div>
-      </div>
-          <div class="card" id="ratingCard" style="padding:12px">
+          <!-- Rating card: visible on desktop only; on mobile use the Rate button in topbar -->
+          <div class="card" id="ratingCard" style="padding:12px" class="rating-desktop-card">
             <div class="card-header" onclick="toggleRatingCard()" style="cursor:pointer;user-select:none">
               <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -874,6 +924,8 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               </div>
             </div>
           </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== ISSUES ===== -->
@@ -2112,6 +2164,20 @@ function closeSidebar(){
   const ov=document.getElementById('sidebarOverlay');
   if(sb) sb.classList.remove('open');
   if(ov) ov.classList.remove('active');
+}
+function openRatingPanel(){
+  // Mirror rating card content into panel body
+  const card = document.getElementById('ratingCardBody');
+  const body = document.getElementById('ratingPanelBody');
+  if(card && body){
+    body.innerHTML = card.innerHTML;
+  }
+  document.getElementById('ratingPanel').classList.add('open');
+  document.getElementById('ratingPanelOverlay').classList.add('open');
+}
+function closeRatingPanel(){
+  document.getElementById('ratingPanel').classList.remove('open');
+  document.getElementById('ratingPanelOverlay').classList.remove('open');
 }
 // Close sidebar when a nav item is clicked on mobile
 document.addEventListener('DOMContentLoaded',()=>{
