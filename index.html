@@ -157,6 +157,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
 .sync-dot.error{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes shimmer{0%{left:-100%}100%{left:100%}}
 
 /* ===== MAIN ===== */
 .main{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);transition:background .2s}
@@ -557,13 +558,45 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
         </div>
         <div>
           <div class="highlight" id="l10Hint"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
-          <div class="card">
-            <div class="card-header"><div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div></div>
-            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:var(--mono)">Rate 1–10 at the end of the meeting and log to history.</p>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="number" id="meetingRating" min="1" max="10" placeholder="8" style="width:70px">
-              <input type="text" id="ratingNote" placeholder="What would make it a 10?">
-              <button class="btn btn-sm btn-primary" onclick="logRating()" style="flex-shrink:0">Log</button>
+          <div class="card" id="ratingCard">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
+              <span class="badge badge-blue" id="ratingStatusBadge">Waiting for votes</span>
+            </div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:var(--mono)">Each admin rates 1–10. Average is calculated once all votes are in and saved to history.</p>
+
+            <!-- Individual rating inputs per user -->
+            <div id="ratingInputArea" style="margin-bottom:16px">
+              <div style="display:flex;gap:8px;align-items:flex-end">
+                <div>
+                  <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);display:block;margin-bottom:5px">Your Rating</label>
+                  <input type="number" id="meetingRating" min="1" max="10" placeholder="1–10" style="width:80px">
+                </div>
+                <div style="flex:1">
+                  <label style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono);display:block;margin-bottom:5px">What would make it a 10?</label>
+                  <input type="text" id="ratingNote" placeholder="Optional note...">
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="submitMyRating()" style="flex-shrink:0"><i class="ti ti-check"></i> Submit</button>
+              </div>
+            </div>
+
+            <!-- Live vote board -->
+            <div style="border-top:1px solid var(--border);padding-top:14px">
+              <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:10px">Live Votes</div>
+              <div id="ratingVoteBoard" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"></div>
+              <div id="ratingAvgRow" style="display:none;padding:12px 16px;border-radius:var(--radius);background:linear-gradient(135deg,rgba(26,58,110,0.08),rgba(37,99,235,0.05));border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)">Team Average</div>
+                  <div style="font-family:var(--display);font-size:32px;font-weight:700;color:var(--text);letter-spacing:-.5px" id="ratingAvgNum">—</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="ratingAvgSub">All 3 admins voted</div>
+                  <div style="display:flex;gap:8px">
+                    <button class="btn btn-sm" onclick="clearRatings()"><i class="ti ti-refresh"></i> Reset</button>
+                    <button class="btn btn-sm btn-primary" onclick="saveRatingToHistory()"><i class="ti ti-device-floppy"></i> Save to History</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="card">
@@ -1164,6 +1197,8 @@ function renderL10(){
   const al=document.getElementById('attendeeList');
   al.innerHTML=DB.attendees.map(a=>`<div class="attendee-chip" onclick="removeAttendee('${a}')"><div class="a-avatar">${a.charAt(0).toUpperCase()}</div>${a}</div>`).join('');
   document.getElementById('attendeeCount').textContent=DB.attendees.length;
+  // Render rating board if on L10 page
+  if(typeof renderRatingBoard === 'function') renderRatingBoard();
 }
 
 function startMeeting(){
@@ -1200,12 +1235,164 @@ function addAttendee(){
 }
 function removeAttendee(name){ DB.attendees=DB.attendees.filter(a=>a!==name); saveDB(); renderL10(); }
 
-function logRating(){
-  const r=document.getElementById('meetingRating').value;
-  const note=document.getElementById('ratingNote').value;
-  if(!r){ showToast('Enter a rating first','error'); return; }
+// ── MULTI-USER MEETING RATING ─────────────────────────────────────────────
+// Stored in localStorage under 'stratus_ratings' — shared key so all users
+// on same browser session see it; Google Sheets polling propagates across devices.
+
+const ADMIN_NAMES = Object.values(USERS).map(u => u.firstName); // ['Jeff','Jeremy','Terrell']
+
+function getRatings(){ try{ return JSON.parse(localStorage.getItem('stratus_active_ratings')||'{}'); }catch(e){ return {}; } }
+function saveRatings(r){ localStorage.setItem('stratus_active_ratings', JSON.stringify(r)); }
+
+function submitMyRating(){
+  const val = parseInt(document.getElementById('meetingRating').value);
+  const note = document.getElementById('ratingNote').value.trim();
+  if(!val || val<1 || val>10){ showToast('Enter a rating between 1 and 10','error'); return; }
+
+  const ratings = getRatings();
+  ratings[currentUser.firstName] = { value: val, note, timestamp: Date.now() };
+  saveRatings(ratings);
+
+  // Also push rating state to Sheets so other devices pick it up
+  pushRatingState(ratings);
+
+  document.getElementById('meetingRating').value = '';
+  document.getElementById('ratingNote').value = '';
+  showToast(`Your rating of ${val}/10 submitted!`, 'success');
+  renderRatingBoard();
+}
+
+async function pushRatingState(ratings){
+  const cfg = getSheetBase(); if(!cfg) return;
+  try{
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values/VTO!A31:C31?valueInputOption=USER_ENTERED&key=${cfg.key}`;
+    await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({values:[['__RATING_STATE__', JSON.stringify(ratings), Date.now()]]})});
+  }catch(e){}
+}
+
+async function pollRatingState(){
+  const cfg = getSheetBase(); if(!cfg) return;
+  try{
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values/VTO!A31:C31?key=${cfg.key}`;
+    const res = await fetch(url);
+    if(!res.ok) return;
+    const data = await res.json();
+    const row = data.values && data.values[0];
+    if(!row || row[0] !== '__RATING_STATE__') return;
+    const remoteRatings = JSON.parse(row[1]||'{}');
+    const localRatings = getRatings();
+    // Merge: take whichever entry is newer per user
+    let changed = false;
+    Object.entries(remoteRatings).forEach(([name, entry])=>{
+      if(!localRatings[name] || entry.timestamp > localRatings[name].timestamp){
+        localRatings[name] = entry;
+        changed = true;
+      }
+    });
+    if(changed){
+      saveRatings(localRatings);
+      renderRatingBoard();
+    }
+  }catch(e){}
+}
+
+function renderRatingBoard(){
+  const ratings = getRatings();
+  const board = document.getElementById('ratingVoteBoard');
+  const avgRow = document.getElementById('ratingAvgRow');
+  const badge = document.getElementById('ratingStatusBadge');
+  const inputArea = document.getElementById('ratingInputArea');
+  if(!board) return;
+
+  const myName = currentUser?.firstName;
+  const alreadyVoted = ratings[myName] !== undefined;
+
+  // Show/hide input
+  if(inputArea) inputArea.style.display = alreadyVoted ? 'none' : '';
+
+  // Render vote cards
+  board.innerHTML = ADMIN_NAMES.map(name => {
+    const vote = ratings[name];
+    const isMe = name === myName;
+    const voted = vote !== undefined;
+    const scoreColor = !voted ? 'var(--text3)' :
+      vote.value >= 8 ? 'var(--green)' :
+      vote.value >= 5 ? 'var(--amber)' : 'var(--red)';
+    return `<div style="
+      padding:14px 16px;border-radius:var(--radius-lg);
+      border:1px solid ${voted ? 'rgba(37,99,235,0.25)' : 'var(--border)'};
+      background:${voted ? 'rgba(37,99,235,0.06)' : 'var(--surface2)'};
+      text-align:center;transition:all .2s;
+    ">
+      <div style="width:32px;height:32px;border-radius:50%;
+        background:${voted ? 'linear-gradient(135deg,#1a3a6e,#2563eb)' : 'var(--surface3)'};
+        display:flex;align-items:center;justify-content:center;
+        font-size:13px;font-weight:700;color:${voted?'white':'var(--text3)'};
+        margin:0 auto 8px;
+      ">${name.charAt(0)}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">${name}${isMe?' (you)':''}</div>
+      ${voted ? `
+        <div style="font-family:var(--display);font-size:26px;font-weight:700;color:${scoreColor};line-height:1;margin-bottom:4px">${vote.value}</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">RATED</div>
+        ${vote.note ? `<div style="font-size:10px;color:var(--text2);margin-top:5px;font-style:italic">"${vote.note}"</div>` : ''}
+      ` : `
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px">Waiting...</div>
+        <div style="width:28px;height:3px;background:var(--border);border-radius:2px;margin:6px auto 0;
+          position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:-100%;width:100%;height:100%;
+            background:var(--accent2);animation:shimmer 1.5s infinite;"></div>
+        </div>
+      `}
+    </div>`;
+  }).join('');
+
+  // Count votes
+  const voteCount = Object.keys(ratings).length;
+  const allVoted = voteCount >= ADMIN_NAMES.length;
+
+  // Update badge
+  if(badge){
+    if(allVoted){
+      badge.className='badge badge-green';
+      badge.textContent='All votes in ✓';
+    } else {
+      badge.className='badge badge-amber';
+      badge.textContent=`${voteCount}/${ADMIN_NAMES.length} votes`;
+    }
+  }
+
+  // Show/hide average
+  if(avgRow){
+    if(allVoted || voteCount >= 2){
+      avgRow.style.display='flex';
+      const votes = Object.values(ratings).map(v=>v.value);
+      const avg = (votes.reduce((a,b)=>a+b,0)/votes.length);
+      const avgRounded = Math.round(avg*10)/10;
+      const avgColor = avgRounded>=8?'var(--green)':avgRounded>=5?'var(--amber)':'var(--red)';
+      const avgNum = document.getElementById('ratingAvgNum');
+      const avgSub = document.getElementById('ratingAvgSub');
+      if(avgNum){ avgNum.textContent=avgRounded+'/10'; avgNum.style.color=avgColor; }
+      if(avgSub){ avgSub.textContent= allVoted ? 'All 3 admins voted ✓' : `${voteCount} of ${ADMIN_NAMES.length} voted`; }
+    } else {
+      avgRow.style.display='none';
+    }
+  }
+}
+
+function saveRatingToHistory(){
+  const ratings = getRatings();
+  const votes = Object.values(ratings).map(v=>v.value);
+  if(!votes.length){ showToast('No ratings submitted yet','error'); return; }
+  const avg = Math.round((votes.reduce((a,b)=>a+b,0)/votes.length)*10)/10;
+  const notes = Object.entries(ratings).map(([n,v])=>v.note?`${n}: ${v.note}`:'').filter(Boolean).join(' | ');
+  const individualStr = Object.entries(ratings).map(([n,v])=>`${n}: ${v.value}/10`).join(', ');
+
   const meeting={
-    id:uid(),date:today(),timestamp:Date.now(),rating:parseInt(r),note,
+    id:uid(),date:today(),timestamp:Date.now(),
+    rating:avg,
+    note: notes || '',
+    individualRatings: individualStr,
     attendees:[...DB.attendees],loggedBy:currentUser.firstName,
     issues:DB.issues.length,todos:DB.todos.length,rocks:DB.rocks.length,
     openIssues:DB.issues.filter(i=>i.type==='open').length,
@@ -1214,14 +1401,27 @@ function logRating(){
   };
   DB.meetings.push(meeting);
   saveDB();
-  document.getElementById('meetingRating').value='';
-  document.getElementById('ratingNote').value='';
+
+  // Clear active ratings
+  localStorage.removeItem('stratus_active_ratings');
+  pushRatingState({});
+
   const h=document.getElementById('l10Hint');
-  h.className='highlight success';
-  h.innerHTML=`<strong style="color:var(--green)">Meeting rated ${r}/10 — saved to history!</strong> Great session.`;
-  setTimeout(()=>{h.className='highlight';h.innerHTML='<strong style="color:var(--accent2)">Ready for next meeting.</strong>';},4000);
-  showToast(`Meeting rated ${r}/10 and saved!`,'success');
+  if(h){ h.className='highlight success'; h.innerHTML=`<strong style="color:var(--green)">Meeting saved! Team avg: ${avg}/10</strong> — ${individualStr}`; setTimeout(()=>{h.className='highlight';h.innerHTML='<strong style="color:var(--accent2)">Ready for next meeting.</strong>';},6000); }
+  showToast(`Meeting saved! Avg rating: ${avg}/10`,'success');
+  renderRatingBoard();
 }
+
+function clearRatings(){
+  if(!confirm('Reset all ratings for this meeting?')) return;
+  localStorage.removeItem('stratus_active_ratings');
+  pushRatingState({});
+  renderRatingBoard();
+  showToast('Ratings reset','success');
+}
+
+// Legacy stub kept for compatibility
+function logRating(){ submitMyRating(); }
 
 // ============================================================
 // ISSUES
@@ -1458,6 +1658,7 @@ function viewHistoryDetail(id){
       <div class="stat-card"><div class="stat-label">Attendees</div><div class="stat-value">${m.attendees?.length||0}</div></div>
       <div class="stat-card"><div class="stat-label">Open Issues</div><div class="stat-value">${m.openIssues||0}</div></div>
     </div>
+    ${m.individualRatings?`<div class="highlight" style="margin-bottom:12px;font-family:var(--mono);font-size:12px"><strong style="color:var(--accent2)">Individual Ratings:</strong> ${m.individualRatings}</div>`:''}
     ${m.note?`<div class="highlight" style="margin-bottom:12px"><strong>Note:</strong> ${m.note}</div>`:''}
     ${m.attendees?.length?`<div class="card-title" style="margin-bottom:8px"><i class="ti ti-users"></i> Attendees</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">${m.attendees.map(a=>`<span class="badge badge-gray">${a}</span>`).join('')}</div>`:''}
     ${m.snapshot?.issues?.length?`<div class="card-title" style="margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Open Issues at Meeting</div><div style="margin-bottom:14px">${m.snapshot.issues.map(i=>`<div style="font-size:12px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)">${i.title}</div>`).join('')}</div>`:''}
@@ -1470,7 +1671,8 @@ function viewHistoryDetail(id){
 function meetingToCSV(m){
   const rows=[
     ['Meeting Date',m.date],
-    ['Rating',m.rating],
+    ['Rating (Average)',m.rating],
+    ['Individual Ratings',m.individualRatings||''],
     ['Note',m.note||''],
     ['Logged By',m.loggedBy||''],
     ['Attendees',(m.attendees||[]).join('; ')],
@@ -1821,6 +2023,7 @@ function startPolling(){
     pullFromSheets();
   }, 30000);
   setInterval(pollMeetingState, 5000);
+  setInterval(pollRatingState, 8000);
 }
 
 function stopPolling(){
