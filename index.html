@@ -1339,6 +1339,9 @@ async function launchApp(email) {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').classList.add('active');
 
+  // Save session so page refresh skips login
+  localStorage.setItem('sat_session', JSON.stringify({ email }));
+
   // Update nav UI
   const setAv = (id) => {
     const el = document.getElementById(id);
@@ -1399,6 +1402,7 @@ function applyConfig() {
 
 function doLogout() {
   CU = null;
+  localStorage.removeItem('sat_session'); // clear saved session on explicit logout
   if (syncIv) clearInterval(syncIv);
   timerPaused();
   closeModal('m-usermenu');
@@ -1432,7 +1436,7 @@ function startSync() {
           'Updated ' + ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
       }
     } catch(e) { /* silent — don't spam errors during polling */ }
-  }, 3000);
+  }, 2000); // polls every 2 seconds
 }
 
 async function pushLive() {
@@ -1853,10 +1857,25 @@ window.addEventListener('resize',()=>{
   if(mn&&ms){if(window.innerWidth<=600){mn.style.display='block';ms.classList.remove('hidden');}else{mn.style.display='none';ms.classList.add('hidden');}}
 });
 
-/* ── Pre-fill Script URL if previously saved ── */
+/* ── Session persistence + Script URL pre-fill on page load ── */
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('sat_script_url');
-  if (saved) { SCRIPT_URL = saved; const el=document.getElementById('gs-id'); if(el) el.value=saved; }
+  // Pre-fill script URL
+  const savedURL = localStorage.getItem('sat_script_url');
+  if (savedURL) { SCRIPT_URL = savedURL; const el=document.getElementById('gs-id'); if(el) el.value=savedURL; }
+
+  // Restore session — if user was logged in before refresh, skip login screen
+  const savedSession = localStorage.getItem('sat_session');
+  if (savedSession) {
+    try {
+      const session = JSON.parse(savedSession);
+      // Verify the email is still a known user
+      if (session.email && USERS[session.email]) {
+        launchApp(session.email);
+      }
+    } catch(e) {
+      localStorage.removeItem('sat_session');
+    }
+  }
 });
 </script>
 </body>
