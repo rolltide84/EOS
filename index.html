@@ -57,7 +57,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 /* ===== SCREENS ===== */
 .screen{display:none;position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto}
 .screen.active{display:flex;align-items:center;justify-content:center}
-#appScreen{display:none;position:fixed;inset:0;z-index:1;flex-direction:row;overflow:hidden}
+#appScreen{display:none;position:fixed;inset:0;z-index:1;flex-direction:row}
 #appScreen.active{display:flex}
 
 /* ===== AUTH SCREENS ===== */
@@ -372,40 +372,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   pointer-events:auto;
 }
 
-/* ===== RATING PANEL (slide-in from right on mobile, modal on desktop) ===== */
-.rating-panel-overlay{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);
-  z-index:50;-webkit-tap-highlight-color:transparent;
-}
-.rating-panel-overlay.open{display:block}
-.rating-panel{
-  position:fixed;top:0;right:-100%;width:340px;max-width:96vw;height:100vh;
-  background:var(--surface);border-left:1px solid var(--border2);
-  z-index:51;overflow-y:auto;transition:right .22s ease;
-  display:flex;flex-direction:column;
-  box-shadow:-8px 0 32px rgba(0,0,0,0.25);
-}
-.rating-panel.open{right:0}
-.rating-panel-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
-  background:var(--bg2);position:sticky;top:0;z-index:1;
-}
-.rating-panel-title{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text)}
-.rating-panel-body{flex:1;padding:18px;overflow-y:auto}
-/* Rating trigger button in topbar */
-.rating-topbar-btn{
-  display:none;align-items:center;justify-content:center;
-  background:none;border:1px solid var(--border);color:var(--text);
-  cursor:pointer;padding:7px 10px;border-radius:var(--radius);
-  gap:6px;font-size:12px;font-weight:500;font-family:var(--font);
-  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-  white-space:nowrap;
-}
-.rating-topbar-btn i{font-size:16px}
-@media screen and (max-width:768px){
-  .rating-topbar-btn{display:flex}
-}
+/* ===== RATING ROWS ===== */
 .rating-row-card{
   padding:6px 10px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--surface2);
@@ -428,13 +395,17 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .mobile-topbar{display:flex}
   .sidebar-close-btn{display:flex}
 
-  /* Sidebar: slide-in drawer */
+  /* On mobile, appScreen must be block (not flex-row) so sidebar doesn't steal width */
+  #appScreen.active{display:block!important}
+
+  /* Sidebar: slide-in drawer — flex:none so it doesn't affect main width */
   .sidebar{
     position:fixed!important;top:0;left:-100%!important;
-    width:82%;max-width:300px;min-width:unset!important;
+    width:82%!important;max-width:300px!important;min-width:0!important;
     height:100vh!important;z-index:30;
     transition:left .22s ease;
     box-shadow:none;
+    flex:none!important;
   }
   .sidebar.open{
     left:0!important;
@@ -465,7 +436,9 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
     flex-direction:column!important;align-items:flex-start!important;
     gap:8px!important;margin-bottom:14px!important;
   }
-  .page-actions{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+  .page-actions{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:4px}
+  .page-actions .btn{min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .page-actions .btn-primary{flex:1;justify-content:center}
   .page-title{font-size:20px!important;letter-spacing:-.3px}
   .page-sub{font-size:12px!important}
   .page-eyebrow{font-size:9px!important}
@@ -581,9 +554,12 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   /* Modals */
   .modal{
     width:96vw!important;max-width:100%!important;
-    padding:18px 16px!important;border-radius:var(--radius-lg)!important;
-    max-height:90vh;overflow-y:auto;
+    padding:16px 14px!important;border-radius:var(--radius-lg)!important;
+    max-height:88vh!important;overflow-y:auto!important;
+    margin:auto;
   }
+  .modal-title{font-size:16px!important;margin-bottom:12px!important}
+  .modal-actions{margin-top:14px!important;padding-top:12px!important}
 
   /* Buttons: touch-friendly */
   .btn{
@@ -769,10 +745,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
       <span class="logo-text" style="font-size:15px">Stratus<span>Ai</span></span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <button class="rating-topbar-btn" onclick="document.getElementById('ratingCard').scrollIntoView({behavior:'smooth',block:'start'})" id="ratingTopbarBtn" aria-label="Rate meeting">
-        <i class="ti ti-star"></i> Rate
-      </button>
-      <div class="user-avatar" id="mobileAvatar" style="width:28px;height:28px;font-size:11px"></div>
+<div class="user-avatar" id="mobileAvatar" style="width:28px;height:28px;font-size:11px"></div>
       <button class="btn-icon" onclick="toggleTheme()" style="padding:6px" aria-label="Toggle theme">
         <i class="ti ti-sun" id="mobileThemeIcon" style="font-size:18px"></i>
       </button>
@@ -782,17 +755,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   <!-- SIDEBAR OVERLAY (mobile) -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-  <!-- RATING PANEL (slide-in from right) -->
-  <div class="rating-panel-overlay" id="ratingPanelOverlay" onclick="closeRatingPanel()"></div>
-  <div class="rating-panel" id="ratingPanel">
-    <div class="rating-panel-header">
-      <div class="rating-panel-title"><i class="ti ti-star" style="color:var(--accent2);margin-right:6px"></i>Meeting Rating</div>
-      <button class="btn-icon" onclick="closeRatingPanel()" aria-label="Close"><i class="ti ti-x" style="font-size:18px"></i></button>
-    </div>
-    <div class="rating-panel-body" id="ratingPanelBody">
-      <!-- Content mirrored from ratingCard -->
-    </div>
-  </div>
+
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
@@ -1264,6 +1227,10 @@ function showScreen(id){
 function showApp(){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('appScreen').classList.add('active');
+  // Force reflow so mobile layout calculates correctly on login
+  requestAnimationFrame(()=>{
+    window.dispatchEvent(new Event('resize'));
+  });
 }
 
 function doLogin(){
@@ -1450,6 +1417,9 @@ function nav(page){
   if(pg) pg.classList.add('active');
   const ni=document.getElementById('nav-'+page);
   if(ni) ni.classList.add('active');
+  // Scroll main to top on every page change (critical for mobile)
+  const main=document.querySelector('.main');
+  if(main) main.scrollTop=0;
   const r={l10:renderL10,issues:renderIssues,todos:renderTodos,rocks:renderRocks,scorecard:renderScorecard,headlines:renderHeadlines,vto:renderVto,settings:renderSettings,history:renderHistory,admin:renderAdmin};
   if(r[page]) r[page]();
 }
@@ -2178,20 +2148,7 @@ function closeSidebar(){
   if(sb) sb.classList.remove('open');
   if(ov) ov.classList.remove('active');
 }
-function openRatingPanel(){
-  // Mirror rating card content into panel body
-  const card = document.getElementById('ratingCardBody');
-  const body = document.getElementById('ratingPanelBody');
-  if(card && body){
-    body.innerHTML = card.innerHTML;
-  }
-  document.getElementById('ratingPanel').classList.add('open');
-  document.getElementById('ratingPanelOverlay').classList.add('open');
-}
-function closeRatingPanel(){
-  document.getElementById('ratingPanel').classList.remove('open');
-  document.getElementById('ratingPanelOverlay').classList.remove('open');
-}
+
 // Close sidebar when a nav item is clicked on mobile
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('.nav-item').forEach(el=>{
