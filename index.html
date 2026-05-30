@@ -6,7 +6,7 @@
 <html lang="en" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="StratusAi Meeting Hub — EOS-based team meeting platform with L10 meetings, Rocks, Scorecard, Issues, and V/TO.">
 <meta name="theme-color" content="#1A3A6E">
 <meta property="og:title" content="StratusAi Meeting Hub">
@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 
 /* ===== THEME VARIABLES ===== */
 :root{
@@ -365,8 +365,12 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,0.5);z-index:29;
   -webkit-tap-highlight-color:transparent;
+  pointer-events:none;
 }
-.sidebar-overlay.active{display:block}
+.sidebar-overlay.active{
+  display:block;
+  pointer-events:auto;
+}
 
 /* ===== RATING ROW CLASSES ===== */
 .rating-row-card{
@@ -418,25 +422,26 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   /* Sidebar: slide-in drawer */
   .sidebar{
     position:fixed!important;top:0;left:-100%!important;
-    width:80%;max-width:290px;min-width:unset!important;
+    width:82%;max-width:300px;min-width:unset!important;
     height:100vh!important;z-index:30;
-    transition:left .2s ease;
+    transition:left .22s ease;
     box-shadow:none;
-    will-change:left;
   }
   .sidebar.open{
     left:0!important;
-    box-shadow:6px 0 24px rgba(0,0,0,0.3);
+    box-shadow:8px 0 32px rgba(0,0,0,0.25);
   }
 
   /* Main: full width, below topbar */
   .main{
-    width:100vw;
+    width:100%;
+    max-width:100vw;
     padding-top:52px;
     height:100vh;
-    overflow-y:auto;
+    overflow-y:scroll;
     overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
   }
 
   /* Pages */
@@ -579,17 +584,24 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
   .btn{
     -webkit-tap-highlight-color:transparent;
     touch-action:manipulation;
+    min-height:44px;
   }
+  .btn-sm{min-height:38px}
   .btn-icon{
     -webkit-tap-highlight-color:transparent;
     touch-action:manipulation;
-    padding:9px!important;
+    padding:10px!important;
+    min-height:44px;
+    min-width:44px;
+    display:inline-flex;align-items:center;justify-content:center;
   }
   .nav-item{
     -webkit-tap-highlight-color:transparent;
     touch-action:manipulation;
-    padding:11px 10px!important;
+    padding:12px 10px!important;
     font-size:14px!important;
+    min-height:44px;
+    display:flex;align-items:center;
   }
 
   /* Sidebar theme toggle: hide (use topbar) */
@@ -851,13 +863,17 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
             <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Total</span><span style="font-family:var(--mono);font-size:12px;color:var(--text);font-weight:600">60:00</span></div>
           </div>
         </div>
-        <div>
-          <div class="highlight" id="l10Hint"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
-          <div class="card" id="ratingCard">
-            <div class="card-header">
+        <div style="display:flex;flex-direction:column">
+          <div class="highlight" id="l10Hint" style="order:0"><strong style="color:var(--accent2)">Ready to begin.</strong> Click <strong>Start Meeting</strong> to run timed segments automatically.</div>
+          <div class="card" id="ratingCard" style="order:2">
+            <div class="card-header" onclick="toggleRatingCard()" style="cursor:pointer;user-select:none">
               <div class="card-title"><i class="ti ti-star"></i> Meeting Rating</div>
-              <span class="badge badge-blue" id="ratingStatusBadge">Waiting for votes</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="badge badge-blue" id="ratingStatusBadge">Waiting for votes</span>
+                <i class="ti ti-chevron-down" id="ratingChevron" style="font-size:16px;color:var(--text3);transition:transform .2s"></i>
+              </div>
             </div>
+            <div id="ratingCardBody">
             <p style="font-size:12px;color:var(--text3);margin-bottom:16px;font-family:var(--mono)">Enter each admin's rating below — all three can be submitted from any device. Average is saved to history.</p>
 
             <!-- Per-admin rating rows — always visible -->
@@ -880,7 +896,7 @@ input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:po
               </div>
             </div>
           </div>
-          <div class="card">
+          <div class="card" id="attendeesCard" style="order:1">
             <div class="card-header"><div class="card-title"><i class="ti ti-users"></i> Attendees</div><span class="badge badge-gray" id="attendeeCount">0</span></div>
             <div id="attendeeList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:28px"></div>
             <div style="display:flex;gap:8px">
@@ -2127,22 +2143,26 @@ function clearData(){ DB={...DB,issues:[],todos:[],rocks:[],scorecard:[],headlin
 // ============================================================
 // MOBILE SIDEBAR
 // ============================================================
+function toggleRatingCard(){
+  const body = document.getElementById('ratingCardBody');
+  const chevron = document.getElementById('ratingChevron');
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : '';
+  if(chevron) chevron.style.transform = isOpen ? 'rotate(-90deg)' : '';
+}
+
 function openSidebar(){
   const sb=document.querySelector('.sidebar');
   const ov=document.getElementById('sidebarOverlay');
   if(sb) sb.classList.add('open');
   if(ov) ov.classList.add('active');
-  // Prevent main content scroll while drawer is open
-  const main=document.querySelector('.main');
-  if(main) main.style.overflow='hidden';
 }
 function closeSidebar(){
   const sb=document.querySelector('.sidebar');
   const ov=document.getElementById('sidebarOverlay');
   if(sb) sb.classList.remove('open');
   if(ov) ov.classList.remove('active');
-  const main=document.querySelector('.main');
-  if(main) main.style.overflow='';
 }
 // Close sidebar when a nav item is clicked on mobile
 document.addEventListener('DOMContentLoaded',()=>{
