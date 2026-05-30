@@ -1300,113 +1300,82 @@ function renderRatingBoard(){
   const badge = document.getElementById('ratingStatusBadge');
   if(!inputArea) return;
 
-  const myName = currentUser?.firstName;
+  const myName = currentUser ? currentUser.firstName : '';
 
-  // Build one row per admin — always shown, locked after voting
-  inputArea.innerHTML = ADMIN_NAMES.map(name => {
+  inputArea.innerHTML = ADMIN_NAMES.map(function(name){
     const vote = ratings[name];
     const voted = vote !== undefined;
     const isMe = name === myName;
+    const youLabel = isMe ? ' <span style="font-size:10px;color:var(--text3);font-weight:400">(you)</span>' : '';
+    const youLabelInput = isMe ? ' <span style="font-size:10px;color:var(--accent2)">you</span>' : '';
     const scoreColor = !voted ? 'var(--text3)' :
       vote.value >= 8 ? 'var(--green)' :
       vote.value >= 5 ? 'var(--amber)' : 'var(--red)';
 
     if(voted){
-      // Locked submitted row
-      return `<div style="
-        display:flex;align-items:center;gap:12px;
-        padding:12px 16px;border-radius:var(--radius-lg);
-        background:rgba(37,99,235,0.05);
-        border:1px solid rgba(37,99,235,0.18);
-        transition:all .2s;
-      ">
-        <div style="width:34px;height:34px;border-radius:50%;
-          background:linear-gradient(135deg,#1a3a6e,#2563eb);
-          display:flex;align-items:center;justify-content:center;
-          font-size:13px;font-weight:700;color:white;flex-shrink:0;">
-          ${name.charAt(0)}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${name}${isMe?' <span style='font-size:10px;color:var(--text3);font-weight:400'>(you)</span>':''}</div>
-          ${vote.note ? `<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">"${vote.note}"</div>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <div style="text-align:center">
-            <div style="font-family:var(--display);font-size:28px;font-weight:700;color:${scoreColor};line-height:1">${vote.value}</div>
-            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em">/ 10</div>
-          </div>
-          <span class="badge badge-green" style="font-size:9px"><i class="ti ti-check" style="font-size:10px"></i> Voted</span>
-          <button class="btn-icon btn-danger" onclick="clearOneName('${name}')" title="Clear ${name}'s vote" style="opacity:.6">
-            <i class="ti ti-x" style="font-size:12px"></i>
-          </button>
-        </div>
-      </div>`;
+      const noteHtml = vote.note
+        ? '<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">&ldquo;' + vote.note + '&rdquo;</div>'
+        : '';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius-lg);background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.18);transition:all .2s">'
+        + '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1a3a6e,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0">' + name.charAt(0) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--text)">' + name + youLabel + '</div>'
+        + noteHtml
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">'
+        + '<div style="text-align:center">'
+        + '<div style="font-family:var(--display);font-size:28px;font-weight:700;color:' + scoreColor + ';line-height:1">' + vote.value + '</div>'
+        + '<div style="font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em">/ 10</div>'
+        + '</div>'
+        + '<span class="badge badge-green" style="font-size:9px"><i class="ti ti-check" style="font-size:10px"></i> Voted</span>'
+        + '<button class="btn-icon btn-danger" onclick="clearOneName(\'' + name + '\')" title="Clear vote" style="opacity:.6"><i class="ti ti-x" style="font-size:12px"></i></button>'
+        + '</div>'
+        + '</div>';
     } else {
-      // Input row — available for anyone to fill in
       const inputId = 'rInput_' + name;
       const noteId  = 'rNote_'  + name;
-      return `<div style="
-        display:flex;align-items:center;gap:10px;
-        padding:12px 16px;border-radius:var(--radius-lg);
-        background:var(--surface2);border:1px solid var(--border);
-        transition:all .2s;
-      ">
-        <div style="width:34px;height:34px;border-radius:50%;
-          background:var(--surface3);
-          display:flex;align-items:center;justify-content:center;
-          font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0;">
-          ${name.charAt(0)}
-        </div>
-        <div style="font-size:13px;font-weight:500;color:var(--text2);min-width:64px;flex-shrink:0">
-          ${name}${isMe?' <span style='font-size:10px;color:var(--accent2)'>↩ you</span>':''}
-        </div>
-        <input type="number" id="${inputId}" min="1" max="10" placeholder="1–10"
-          style="width:76px;flex-shrink:0;font-family:var(--mono);font-size:14px;font-weight:600;text-align:center"
-          onkeydown="if(event.key==='Enter')submitNameRating('${name}')">
-        <input type="text" id="${noteId}" placeholder="What would make it a 10? (optional)"
-          style="flex:1"
-          onkeydown="if(event.key==='Enter')submitNameRating('${name}')">
-        <button class="btn btn-sm btn-primary" onclick="submitNameRating('${name}')" style="flex-shrink:0">
-          <i class="ti ti-check"></i> Submit
-        </button>
-      </div>`;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-lg);background:var(--surface2);border:1px solid var(--border);transition:all .2s">'
+        + '<div style="width:34px;height:34px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--text3);flex-shrink:0">' + name.charAt(0) + '</div>'
+        + '<div style="font-size:13px;font-weight:500;color:var(--text2);min-width:70px;flex-shrink:0">' + name + youLabelInput + '</div>'
+        + '<input type="number" id="' + inputId + '" min="1" max="10" placeholder="1-10" style="width:76px;flex-shrink:0;font-family:var(--mono);font-size:14px;font-weight:600;text-align:center" onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
+        + '<input type="text" id="' + noteId + '" placeholder="What would make it a 10? (optional)" style="flex:1" onkeydown="if(event.key===\'Enter\')submitNameRating(\'' + name + '\')">'
+        + '<button class="btn btn-sm btn-primary" onclick="submitNameRating(\'' + name + '\')" style="flex-shrink:0"><i class="ti ti-check"></i> Submit</button>'
+        + '</div>';
     }
   }).join('');
 
-  // Count & badge
   const voteCount = Object.keys(ratings).length;
-  const allVoted = voteCount >= ADMIN_NAMES.length;
+  const allVoted  = voteCount >= ADMIN_NAMES.length;
+
   if(badge){
     if(allVoted){
-      badge.className='badge badge-green'; badge.textContent='All votes in ✓';
+      badge.className='badge badge-green'; badge.textContent='All votes in \u2713';
     } else if(voteCount > 0){
-      badge.className='badge badge-amber'; badge.textContent=`${voteCount}/${ADMIN_NAMES.length} votes`;
+      badge.className='badge badge-amber'; badge.textContent=voteCount+'/'+ADMIN_NAMES.length+' votes';
     } else {
       badge.className='badge badge-blue'; badge.textContent='Waiting for votes';
     }
   }
 
-  // Average row
   if(avgRow){
     if(voteCount >= 1){
       avgRow.style.display='block';
-      const votes = Object.values(ratings).map(v=>v.value);
-      const avg = votes.reduce((a,b)=>a+b,0)/votes.length;
+      const votes = Object.values(ratings).map(function(v){ return v.value; });
+      const avg = votes.reduce(function(a,b){ return a+b; },0) / votes.length;
       const avgRounded = Math.round(avg*10)/10;
       const avgColor = avgRounded>=8?'var(--green)':avgRounded>=5?'var(--amber)':'var(--red)';
       const avgNum = document.getElementById('ratingAvgNum');
       const avgSub = document.getElementById('ratingAvgSub');
       if(avgNum){ avgNum.textContent=avgRounded+'/10'; avgNum.style.color=avgColor; }
       if(avgSub){
-        const breakdown = ADMIN_NAMES.map(n=>ratings[n]?`${n}: ${ratings[n].value}`:`${n}: —`).join('  ·  ');
-        avgSub.textContent = breakdown;
+        const breakdown = ADMIN_NAMES.map(function(n){ return ratings[n] ? n+': '+ratings[n].value : n+': \u2014'; }).join('  \u00b7  ');
+        avgSub.textContent=breakdown;
       }
     } else {
       avgRow.style.display='none';
     }
   }
 }
-
 function saveRatingToHistory(){
   const ratings = getRatings();
   const votes = Object.values(ratings).map(v=>v.value);
